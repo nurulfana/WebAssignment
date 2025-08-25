@@ -23,9 +23,9 @@ A simple web-based system that provides full CRUD functionality to manage assign
   <tr>
     <td>Dashboard</td>
     <td colspan="3">
-      <img src="UI/Dashboard.png">
-      <img src="UI/Edit.png">
-      <img src="UI/Delete.png">
+      <img src="UI/Dashboard.png" style="display:block; margin:10px 0;">
+      <img src="UI/Edit.png" style="display:block; margin:10px 0;">
+      <img src="UI/Delete.png" style="display:block; margin:10px 0;">
     </td>
   </tr>
   <tr>
