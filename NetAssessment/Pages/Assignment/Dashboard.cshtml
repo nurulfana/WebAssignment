@@ -1,0 +1,560 @@
+@page
+@model NetAssessment.Pages_AssignmentList.DashboardModel
+
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<input name="__RequestVerificationToken" type="hidden" value='@Antiforgery.GetAndStoreTokens(HttpContext).RequestToken' />
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<h1 class="text-center title-text mb-4">Dashboard</h1>
+<hr class="thick-white-hr">
+
+<div class="container-fluid px-0">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-2">
+        @* Search *@
+        <form id="searchForm" method="get" class="d-flex" style="max-width: 300px; width: 100%;">
+            <input type="text" name="SearchString" value="@Model.SearchString" placeholder="Search records..." class="form-control" />
+        </form>
+
+        @* Row count, Export button, Refresh button *@
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span id="rowCountBadge" class="badge bg-secondary">Total: @Model.AssignmentList.Count()</span>
+
+            <button type="button" class="btn btn-light btn-sm" title="Refresh Table" onclick="refreshTable()">
+                <i class="fa fa-sync"></i>
+            </button>
+
+            <a asp-page-handler="Export" class="btn btn-light btn-sm" title="Export to Excel">
+                <i class="fa fa-file-excel"></i>
+            </a>
+        </div>
+    </div>
+
+    @* Table *@
+    <table id="assignmentTable" class="table table-sm table-bordered table-hover bg-white align-middle display nowrap" style="width:100%">
+        <thead class="table-light text-center align-middle">
+            <tr>
+                <th>Task</th>
+                <th>Customer</th>
+                <th>Mandays</th>
+                <th>Start Date</th>
+                <th>Add Days</th>
+                <th style="white-space: normal; word-break: break-word;">Estimated Completion Date</th>
+                <th>PIC</th>
+                <th>Status</th>
+                <th style="white-space: normal; word-break: break-word;">Completion Date</th>
+                <th>Remarks</th>
+                <th style="white-space: normal; word-break: break-word;">Last Communication Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.AssignmentList)
+            {
+                <tr data-id="@item.Id">
+                    <td class="text-start" style="white-space: normal; word-break: break-all; overflow-wrap: anywhere;">@item.Task</td>
+                    <td class="text-start" style="white-space: normal; word-break: break-all; overflow-wrap: anywhere;">@item.Customer</td>
+                    <td class="text-end text-nowrap">@item.Mandays.ToString("N0")</td>
+                    <td class="text-end text-nowrap">@item.StartDate.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end text-nowrap">@item.AddDays?.ToString("N0")</td>
+                    <td class="text-end text-nowrap">@item.EstimatedCompletionDate.ToString("yyyy-MM-dd")</td>
+                    <td class="text-start">@item.PIC</td>
+                    <td class="text-start">@item.Status</td>
+                    <td class="text-end text-nowrap">@item.CompletionDate?.ToString("yyyy-MM-dd")</td>
+                    <td class="text-start" style="white-space: normal; word-break: break-all; overflow-wrap: anywhere;">@item.Remarks</td>
+                    <td class="text-end text-nowrap">@item.LastCommunicationDate.ToString("yyyy-MM-dd")</td>
+
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="OnEditRow(@item.Id)">
+                                Edit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="OnDeletePopup(@item.Id)">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@* Delete Popup *@
+<div class="modal fade" id="deletePopup" tabindex="-1" aria-labelledby="deletePopupLabel" aria-hidden="true">
+    <div class="modal-dialog modal-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger" id="deletePopupLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this record?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="statusAlert" class="alert alert-success fade" role="alert" style="display:none;"></div>
+
+<script>
+    // Datatable
+    $('#assignmentTable').DataTable({    
+        pageLength: 15,
+        lengthChange: false,
+        ordering: false,
+        searching: false,
+        info: false,
+        responsive: {
+            details: {
+                type: 'inline',
+                renderer: function ( api, rowIdx, columns ) {
+                    var data = $.map(columns, function (col) {
+                        if (col.hidden) {
+                            return `
+                                <tr data-dt-row="${col.rowIndex}" data-dt-column="${col.columnIndex}">
+                                    <td class="fw-bold">${col.title}</td>
+                                    <td>${col.data}</td>
+                                </tr>`;
+                        }
+                        return '';
+                    }).join('');
+
+                    return data ? $('<table class="table table-sm mb-0"/>').append('<tbody>'+data+'</tbody>') : false;
+                }
+            }
+        },
+        columnDefs: [
+            { orderable: false, targets: -1 }, // Disable sorting on Actions
+            { responsivePriority: 1, targets: 0 },  // Task
+            { responsivePriority: 2, targets: 1 },  // Customer
+            { responsivePriority: 3, targets: 7 },  // Status
+            { responsivePriority: 4, targets: -1 }, // Actions
+            { responsivePriority: 5, targets: 8 },  // Completion Date
+            { responsivePriority: 10, targets: 9 }, // Remarks
+            { responsivePriority: 11, targets: 10 } // Last Comm Date
+        ],
+        language: {
+            paginate: {
+                previous: "<i class='fa fa-angle-left'></i>",
+                next: "<i class='fa fa-angle-right'></i>"
+            }
+        },
+        drawCallback: function () {
+            $('.dataTables_paginate .paginate_button')
+                .addClass('btn btn-sm btn-light mx-1')
+                .removeClass('ui-state-default');
+        }
+    });
+
+    $('#assignmentTable').on('responsive-display.dt', function (e, datatable, row, showHide, update) {
+        if (!showHide) return; // only when a child row is shown
+
+        const rowNode = row.node();
+        const rowId = $(rowNode).data('id');
+
+        // Check if this row is currently in edit mode
+        if ($(rowNode).find('.action-btn-edit').length) {
+            const editableCols = [0,1,2,3,4,5,6,7,8,9,10];
+
+            // Loop through child row hidden columns
+            const childRows = $(row.child()).find('table tbody tr');
+            childRows.each(function () {
+                const colTitle = $(this).find('td:first').text(); // column name
+                const cell = $(this).find('td:last');
+
+                // Find index of column
+                const idx = editableCols.find(i => $('#assignmentTable thead th').eq(i).text() === colTitle);
+                if (idx === undefined) return;
+
+                const text = $(cell).text().trim();
+
+                if (idx === 6) { // PIC
+                    $(cell).html(`
+                        <select class="form-select form-select-sm">
+                            <option value="Ahmad" ${text === "Ahmad" ? "selected" : ""}>Ahmad</option>
+                            <option value="Ling" ${text === "Ling" ? "selected" : ""}>Ling</option>
+                            <option value="Ganesh" ${text === "Ganesh" ? "selected" : ""}>Ganesh</option>
+                        </select>
+                    `);
+                } else if (idx === 7) { // Status
+                    $(cell).html(`
+                        <select class="form-select form-select-sm">
+                            <option value="Pending" ${text === "Pending" ? "selected" : ""}>Pending</option>
+                            <option value="In Progress" ${text === "In Progress" ? "selected" : ""}>In Progress</option>
+                            <option value="Completed" ${text === "Completed" ? "selected" : ""}>Completed</option>
+                            <option value="On Hold" ${text === "On Hold" ? "selected" : ""}>On Hold</option>
+                        </select>
+                    `);
+                } else {
+                    let inputType =
+                        (idx === 2 || idx === 4) ? "number" :
+                        (idx === 3 || idx === 5 || idx === 8 || idx === 10) ? "date" : "text";
+
+                    let value = text;
+                    if (inputType === "date" && text) {
+                        const date = new Date(text);
+                        if (!isNaN(date)) value = date.toISOString().split("T")[0];
+                    }
+                    $(cell).html(`<input type="${inputType}" class="form-control form-control-sm" value="${value}">`);
+                }
+            });
+        }
+    });
+
+    // Search function
+    const searchInput = document.querySelector('input[name="SearchString"]');
+    const searchForm = document.getElementById('searchForm');
+    let timer;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            searchForm.submit();
+        }, 500); 
+    });
+
+    // Delete function
+    let deleteId = null;
+
+    function OnDeletePopup(id) {
+        deleteId = id;
+        var deletePopup = new bootstrap.Modal(document.getElementById('deletePopup'));
+        deletePopup.show();
+    }
+
+    document.getElementById("confirmDeleteBtn").addEventListener("click", function () {
+        if (deleteId) {
+            fetch(`?handler=DeleteAjax&id=${deleteId}`, {
+                method: "POST",
+                headers: {
+                    "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to delete.");
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Remove row from table
+                    document.querySelector(`tr[data-id='${deleteId}']`).remove();
+                }
+                // Close popup
+                var deletePopupEl = document.getElementById('deletePopup');
+                var deletePopup = bootstrap.Modal.getInstance(deletePopupEl);
+                deletePopup.hide();
+                refreshTableWithAlert("Successfully deleted record.", "success");
+            })
+            .catch(err => {
+                console.error(err);
+                showAlert("Error occured while deleting record.", "danger");
+            });
+        }
+    });
+
+
+    // Edit function
+    function OnEditRow(id) {  
+        const table = $('#assignmentTable').DataTable();
+        const row = table.row(`tr[data-id='${id}']`);
+        const rowNode = row.node(); // main tr element
+        const cells = $(rowNode).find('td');
+
+        // Save original values
+        rowNode.dataset.original = JSON.stringify(cells.map((i, td) => $(td).text()));
+
+        // Editable columns indexes (all)
+        const editableCols = [0,1,2,3,4,5,6,7,8,9,10];
+
+        editableCols.forEach(i => {
+            const cell = cells[i];
+            const text = $(cell).text().trim();
+
+            if (i === 6) { // PIC selectbox
+                $(cell).html(`
+                    <select class="form-select form-select-sm">
+                        <option value="Ahmad" ${text === "Ahmad" ? "selected" : ""}>Ahmad</option>
+                        <option value="Ling" ${text === "Ling" ? "selected" : ""}>Ling</option>
+                        <option value="Ganesh" ${text === "Ganesh" ? "selected" : ""}>Ganesh</option>
+                    </select>
+                `);
+            } 
+            else if (i === 7) { // Status selectbox
+                $(cell).html(`
+                    <select class="form-select form-select-sm">
+                        <option value="Pending" ${text === "Pending" ? "selected" : ""}>Pending</option>
+                        <option value="In Progress" ${text === "In Progress" ? "selected" : ""}>In Progress</option>
+                        <option value="Completed" ${text === "Completed" ? "selected" : ""}>Completed</option>
+                        <option value="On Hold" ${text === "On Hold" ? "selected" : ""}>On Hold</option>
+                    </select>
+                `);
+            } 
+            else { // other inputs
+                let inputType =
+                    (i === 2 || i === 4) ? "number" :
+                    (i === 3 || i === 5 || i === 8 || i === 10) ? "date" : "text";
+
+                let value = text;
+                if (inputType === "date" && text) {
+                    const date = new Date(text);
+                    if (!isNaN(date)) value = date.toISOString().split("T")[0];
+                }
+                $(cell).html(`<input type="${inputType}" class="form-control form-control-sm" value="${value}">`);
+            }
+        });
+
+        // Replace action buttons
+        const actionCell = cells[cells.length - 1];
+        $(actionCell).html(`
+            <div class="d-flex justify-content-center gap-1 action-btn-edit">
+                <button type="button" class="btn btn-success" onclick="OnSaveEdit(${id})">Save</button>
+                <button type="button" class="btn btn-secondary" onclick="OnCancelEdit(${id})">Cancel</button>
+            </div>
+        `);
+
+        // Check if the row has responsive child row open
+        if (row.child.isShown()) {
+            const childRow = $(row.child()).find('table tbody tr'); // all hidden columns
+            childRow.each(function() {
+                const colTitle = $(this).find('td:first').text(); // column name
+                const cell = $(this).find('td:last');
+
+                // find index of this column in editableCols
+                const idx = editableCols.find(i => $('#assignmentTable thead th').eq(i).text() === colTitle);
+                if (idx === undefined) return;
+
+                const text = $(cell).text().trim();
+                if (idx === 6) { // PIC
+                    $(cell).html(`
+                        <select class="form-select form-select-sm">
+                            <option value="Ahmad" ${text === "Ahmad" ? "selected" : ""}>Ahmad</option>
+                            <option value="Ling" ${text === "Ling" ? "selected" : ""}>Ling</option>
+                            <option value="Ganesh" ${text === "Ganesh" ? "selected" : ""}>Ganesh</option>
+                        </select>
+                    `);
+                } 
+                else if (idx === 7) { // Status
+                    $(cell).html(`
+                        <select class="form-select form-select-sm">
+                            <option value="Pending" ${text === "Pending" ? "selected" : ""}>Pending</option>
+                            <option value="In Progress" ${text === "In Progress" ? "selected" : ""}>In Progress</option>
+                            <option value="Completed" ${text === "Completed" ? "selected" : ""}>Completed</option>
+                            <option value="On Hold" ${text === "On Hold" ? "selected" : ""}>On Hold</option>
+                        </select>
+                    `);
+                } 
+                else {
+                    let inputType =
+                        (idx === 2 || idx === 4) ? "number" :
+                        (idx === 3 || idx === 5 || idx === 8 || idx === 10) ? "date" : "text";
+                    let value = text;
+                    if (inputType === "date" && text) {
+                        const date = new Date(text);
+                        if (!isNaN(date)) value = date.toISOString().split("T")[0];
+                    }
+                    $(cell).html(`<input type="${inputType}" class="form-control form-control-sm" value="${value}">`);
+                }
+            });
+        }
+
+        $('#assignmentTable').DataTable().columns.adjust().responsive.recalc();
+    }
+
+    function OnCancelEdit(id) {
+        const row = document.querySelector(`tr[data-id='${id}']`);
+        const original = JSON.parse(row.dataset.original);
+
+        // Restore main row cells
+        const mainCells = row.querySelectorAll("td");
+        mainCells.forEach((cell, i) => {
+            cell.innerText = original[i];
+        });
+
+        // Restore child row if open
+        const table = $('#assignmentTable').DataTable();
+        const dtRow = table.row(row);
+
+        if (dtRow.child.isShown()) {
+            const childRows = $(dtRow.child()).find('table tbody tr');
+            childRows.each(function() {
+                const colTitle = $(this).find('td:first').text();
+                const idx = Array.from(mainCells).findIndex(c => $('#assignmentTable thead th').eq(Array.from(mainCells).indexOf(c)).text() === colTitle);
+                if (idx !== -1) {
+                    $(this).find('td:last').text(original[idx]);
+                }
+            });
+        }
+
+        // Restore action buttons
+        const actionCell = mainCells[mainCells.length - 1];
+        actionCell.innerHTML = `
+            <div class="d-flex justify-content-center gap-1">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="OnEditRow(${id})">Edit</button>
+                <a href="javascript:void(0);" class="btn btn-sm btn-outline-danger" onclick="OnDeletePopup(${id})">Delete</a>
+            </div>`;
+    }
+
+    function OnSaveEdit(id) {
+        const row = document.querySelector(`tr[data-id='${id}']`);
+        const table = $('#assignmentTable').DataTable();
+        const dtRow = table.row(row);
+
+        let allFields = {};
+
+        // Collect inputs from main row
+        $(row).find('td').each(function(i) {
+            const thText = $('#assignmentTable thead th').eq(i).text().trim();
+            const input = $(this).find('input, select');
+            if (input.length) allFields[thText] = input.val();
+        });
+
+        // Collect inputs from hidden child row if open
+        if (dtRow.child.isShown()) {
+            $(dtRow.child()).find('table tbody tr').each(function() {
+                const colTitle = $(this).find('td:first').text().trim();
+                const input = $(this).find('td:last input, td:last select');
+                if (input.length) allFields[colTitle] = input.val();
+            });
+        }
+
+        // Validate required fields
+        const requiredColumns = ['Task', 'Customer', 'Mandays', 'Start Date', 'Estimated Completion Date', 'PIC', 'Status', 'Last Communication Date'];
+        let hasError = false;
+
+        requiredColumns.forEach(col => {
+            const value = allFields[col];
+            if (!value || value.toString().trim() === "") {
+                hasError = true;
+
+                $(row).find(`td:contains('${col}') input, td:contains('${col}') select`).addClass("is-invalid");
+
+                if (dtRow.child.isShown()) {
+                    $(dtRow.child()).find(`td:first:contains('${col}')`).siblings('td').find('input, select').addClass("is-invalid");
+                }
+            } 
+            else {
+                $(row).find(`td:contains('${col}') input, td:contains('${col}') select`).removeClass("is-invalid");
+                if (dtRow.child.isShown()) {
+                    $(dtRow.child()).find(`td:first:contains('${col}')`).siblings('td').find('input, select').removeClass("is-invalid");
+                }
+            }
+        });
+
+        if (hasError) return;
+
+        // Build data object to send
+        let data = {
+            Id: id,
+            Task: allFields['Task'] || "",
+            Customer: allFields['Customer'] || "",
+            Mandays: allFields['Mandays'] || 0,
+            StartDate: allFields['Start Date'] || "",
+            AddDays: parseInt(allFields['Add Days']) || null,
+            EstimatedCompletionDate: allFields['Estimated Completion Date'] || "",
+            PIC: allFields['PIC'] || "",
+            Status: allFields['Status'] || "",
+            CompletionDate: allFields['Completion Date'] || null,
+            Remarks: allFields['Remarks'] || "",
+            LastCommunicationDate: allFields['Last Communication Date'] || ""
+        };
+
+        // Send AJAX request
+        fetch(`?handler=EditAjax`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Failed to save changes.");
+            return response.json();
+        })
+        .then(res => {
+            if (res.success) {
+                // Update main row
+                $(row).find('td').each(function(i) {
+                    const thText = $('#assignmentTable thead th').eq(i).text().trim();
+                    if (allFields[thText] !== undefined && i !== $('#assignmentTable thead th').length - 1) {
+                        $(this).text(allFields[thText]);
+                    }
+                });
+
+                // Update child row if open
+                if (dtRow.child.isShown()) {
+                    $(dtRow.child()).find('table tbody tr').each(function() {
+                        const colTitle = $(this).find('td:first').text().trim();
+                        if (allFields[colTitle] !== undefined) {
+                            $(this).find('td:last').text(allFields[colTitle]);
+                        }
+                    });
+                }
+
+                // Restore action buttons
+                const actionCell = row.querySelector("td:last-child");
+                actionCell.innerHTML = `
+                    <div class="d-flex justify-content-center gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="OnEditRow(${id})">Edit</button>
+                        <a href="javascript:void(0);" class="btn btn-sm btn-outline-danger" onclick="OnDeletePopup(${id})">Delete</a>
+                    </div>`;
+
+                refreshTableWithAlert("Successfully edited record.", "success");
+            } 
+            else {
+                showAlert("Error occurred while editing record.", "danger");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showAlert("Error saving record.", "danger");
+        });
+    }
+
+    // Alert Message
+    function showAlert(message, type = "success") {
+        const alertDiv = document.getElementById("statusAlert");
+        alertDiv.className = `alert alert-${type} alert-center fade show`; 
+        alertDiv.innerText = message;
+        alertDiv.style.display = "block";
+
+        setTimeout(() => {
+            $(alertDiv).fadeOut("slow", () => {
+                alertDiv.style.display = "none"; 
+            });
+        }, 3000);
+    }
+
+    function refreshTable() {
+        location.reload();
+    }
+
+    function refreshTableWithAlert(message, type = "success") {
+        // Store message and type in sessionStorage
+        sessionStorage.setItem("alertMessage", message);
+        sessionStorage.setItem("alertType", type);
+        refreshTable();
+    }
+
+    // On page load, check for message
+    window.addEventListener("DOMContentLoaded", () => {
+        const message = sessionStorage.getItem("alertMessage");
+        const type = sessionStorage.getItem("alertType");
+
+        if (message) {
+            showAlert(message, type);
+            // Clear it so it doesn’t show again
+            sessionStorage.removeItem("alertMessage");
+            sessionStorage.removeItem("alertType");
+        }
+    });
+
+
+</script>

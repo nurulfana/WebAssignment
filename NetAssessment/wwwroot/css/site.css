@@ -1,0 +1,86 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+    background-color: #9ABED0;
+}
+
+footer {
+    background-color: white;
+}
+
+.title-text {
+    font-family: "Oswald", sans-serif;
+    text-transform: uppercase;
+    color: white;
+}
+
+.form-card {
+    background-color: #ffffff; 
+    border-radius: 0.75rem; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    padding: 2rem; 
+    margin-top: 2rem; 
+}
+
+.thick-white-hr {
+    height: 3px;
+    background-color: white;
+    margin-bottom: 1rem; 
+    margin-left: auto;
+    margin-right: auto;
+    width: 800px; 
+}
+
+#statusAlert {
+    position: fixed;
+    top: 20px; 
+    left: 50%; 
+    transform: translateX(-50%);
+    z-index: 1050; 
+    min-width: 200px;
+    text-align: center;
+}
+
+.form-group-column label.required::after {
+    content: " *";
+    color: red;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.15rem 0.35rem !important; 
+    font-size: 0.75rem !important; 
+    border-radius: 0.2rem !important; 
+    background: #f8f9fa !important; 
+    color: #212529 !important;
+    border: 1px solid #dee2e6 !important;
+    box-shadow: none !important; 
+    outline: none !important;
+    display: inline-flex; 
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-edit button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem !important; 
+    min-width: 60px;
+    flex: 1 1 auto; 
+}

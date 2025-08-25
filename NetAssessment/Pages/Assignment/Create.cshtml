@@ -1,0 +1,170 @@
+@page
+@model NetAssessment.Pages_AssignmentList.CreateModel
+@{
+    ViewData["Title"] = "Create";
+}
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
+<h1 class="text-center title-text mb-4">Create Assignment</h1>
+<hr class="thick-white-hr">
+
+<div class="container form-card" style="max-width: 800px;">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* Task *@
+                <label asp-for="AssignmentList.Task" class="form-label required"></label>
+                <input asp-for="AssignmentList.Task" class="form-control" />
+                <span asp-validation-for="AssignmentList.Task" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group-column">
+                @* Customer *@
+                <label asp-for="AssignmentList.Customer" class="form-label required"></label>
+                <input asp-for="AssignmentList.Customer" class="form-control" />
+                <span asp-validation-for="AssignmentList.Customer" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* Mandays *@
+                <label asp-for="AssignmentList.Mandays" class="form-label required"></label>
+                <input asp-for="AssignmentList.Mandays" class="form-control" />
+                <span asp-validation-for="AssignmentList.Mandays" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group-column">
+                @* Start Date *@
+                <label asp-for="AssignmentList.StartDate" class="form-label required"></label>
+                <input asp-for="AssignmentList.StartDate" class="form-control datepicker" placeholder="yyyy-MM-dd" />
+                <span asp-validation-for="AssignmentList.StartDate" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* Add Days *@
+                <label asp-for="AssignmentList.AddDays" class="form-label"></label>
+                <input asp-for="AssignmentList.AddDays" class="form-control" />
+                <span asp-validation-for="AssignmentList.AddDays" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group-column">
+                @* Estimated Completion Date *@
+                <label asp-for="AssignmentList.EstimatedCompletionDate" class="form-label required"></label>
+                <input asp-for="AssignmentList.EstimatedCompletionDate" class="form-control datepicker" placeholder="yyyy-MM-dd" />
+                <span asp-validation-for="AssignmentList.EstimatedCompletionDate" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* PIC *@
+                <label asp-for="AssignmentList.PIC" class="form-label required"></label>
+                <select asp-for="AssignmentList.PIC" class="form-select status-select">
+                    <option value="">Please Select...</option>
+                    <option value="Ahmad">Ahmad</option>
+                    <option value="Ling">Ling</option>
+                    <option value="Ganesh">Ganesh</option>
+                </select>
+                <span asp-validation-for="AssignmentList.PIC" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group-column">
+                @* Status *@
+                <label asp-for="AssignmentList.Status" class="form-label required"></label>
+                <select asp-for="AssignmentList.Status" class="form-select status-select">
+                    <option value="">Please Select...</option>
+                    <option value="Pending">Pending</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="OnHold">On Hold</option>
+                </select>
+                <span asp-validation-for="AssignmentList.Status" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* Completion Date *@
+                <label asp-for="AssignmentList.CompletionDate" class="form-label"></label>
+                <input asp-for="AssignmentList.CompletionDate" class="form-control datepicker" placeholder="yyyy-MM-dd" />
+                <span asp-validation-for="AssignmentList.CompletionDate" class="text-danger"></span>
+            </div>
+            <div class="col-md-6 form-group-column">
+                @* Remarks *@
+                <label asp-for="AssignmentList.Remarks" class="form-label"></label>
+                <input asp-for="AssignmentList.Remarks" class="form-control" asp-required="false" />
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6 form-group-column">
+                @* Last Communicate Date *@
+                <label asp-for="AssignmentList.LastCommunicationDate" class="form-label required"></label>
+                <input asp-for="AssignmentList.LastCommunicationDate" class="form-control datepicker" placeholder="yyyy-MM-dd" />
+                <span asp-validation-for="AssignmentList.LastCommunicationDate" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center mt-3">
+            @* Create button *@
+            <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+    </form>
+</div>
+
+@* Alert message *@
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div id="statusAlert" class="alert @(Model.StatusMessage.Contains("success") ? "alert-success" : "alert-danger") 
+        alert-center fade" role="alert">@Model.StatusMessage
+    </div>
+
+}
+
+<script>
+    $(function () {
+        // Alert message
+        $("#statusAlert").addClass("show");
+        setTimeout(function() {
+            $("#statusAlert").fadeOut("slow");
+        }, 3000);
+
+        // Date picker
+        $(".datepicker").datepicker({
+            dateFormat: "yy-mm-dd",
+            changeMonth: true,
+            changeYear: true,
+            showAnim: "slideDown",
+            onSelect: function() {
+                $(this).trigger("input");
+            }
+        });
+
+        $(".datepicker").on("blur input", function () {
+            $(this).valid();
+        });
+
+        // Status selectbox
+        $('.status-select').select2({
+            placeholder: "Please Select...",
+            allowClear: true,
+            width: '100%'
+        }).on('change', function() {
+            $(this).valid();
+        });
+
+        $('.status-select').each(function(){
+            $(this).next('.select2-container').find('.select2-selection').css({
+                'height': 'calc(1.5em + .75rem + 2px)', 
+                'padding': '.375rem .75rem'
+            });
+        });
+    });
+</script>
