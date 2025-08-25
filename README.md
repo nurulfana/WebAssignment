@@ -19,15 +19,19 @@ A simple web-based system that provides full CRUD functionality to manage assign
 
 # Snippets of this project
 
-<table>
-     <tr>
-         <td>Dashboard</td>
-         <td><img src="UI/Dashboard.png"></td>
-         <td><img src="UI/Edit.png"></td>
-         <td><img src="UI/Delete.png"></td>
-     </tr>
-      <tr>
-         <td>Create Assignment</td>
-         <td><img src="UI/CreateAssignment.png"></td>
-      </tr>
+<table border="1">
+  <tr>
+    <td>Dashboard</td>
+    <td colspan="3">
+      <img src="UI/Dashboard.png">
+      <img src="UI/Edit.png">
+      <img src="UI/Delete.png">
+    </td>
+  </tr>
+  <tr>
+    <td>Create Assignment</td>
+    <td colspan="3">
+      <img src="UI/CreateAssignment.png">
+    </td>
+  </tr>
 </table>
