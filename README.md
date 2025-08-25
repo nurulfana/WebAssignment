@@ -23,6 +23,8 @@ A simple web-based system that provides full CRUD functionality to manage assign
      <tr>
          <td>Dashboard</td>
          <td><img src="UI/Dashboard.png"></td>
+         <td><img src="UI/Edit.png"></td>
+         <td><img src="UI/Delete.png"></td>
      </tr>
       <tr>
          <td>Create Assignment</td>
